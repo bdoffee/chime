@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fake Chime App</title>
+<style>
+/* Reset and body */
+body { margin: 0; font-family: 'Helvetica', sans-serif; background-color: #f0f3f5; }
+
+/* Login Page */
+#loginPage { display: flex; justify-content: center; align-items: center; height: 100vh; }
+#loginBox { background-color: white; width: 320px; padding: 30px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); text-align: center; }
+#loginBox h2 { color: #00c853; margin-bottom: 20px; }
+#loginBox input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; }
+#loginBox button { width: 95%; padding: 12px; background-color: #00c853; border: none; border-radius: 8px; color: white; font-size: 16px; cursor: pointer; margin-top: 10px; }
+
+/* Dashboard */
+#dashboard { display: none; max-width: 400px; margin: 20px auto; background-color: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
+header { background-color: #00c853; color: white; padding: 20px; text-align: center; font-size: 22px; }
+.container { padding: 20px; }
+
+/* Balance Card */
+.card { background-color: #e8f5e9; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+.card h3 { margin: 0; font-size: 16px; color: #555; }
+.card p { font-size: 28px; margin: 5px 0; color: #00c853; }
+
+/* Transactions Table */
+.transactions { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.transactions th, .transactions td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+.transactions th { color: #555; font-weight: normal; }
+
+/* Buttons */
+.button { background-color: #00c853; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-size: 16px; margin-bottom: 10px; cursor: pointer; }
+
+/* Inputs */
+input[type="number"], select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; }
+
+/* Responsive */
+@media (max-width: 420px) { #dashboard { width: 90%; } }
+</style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div id="loginPage">
+    <div id="loginBox">
+        <h2>Chime Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+    <header>Mock Chime</header>
+    <div class="container">
+        <div class="card">
+            <h3>Account Balance</h3>
+            $<span id="balance">0</span>
+        </div>
+
+        <h3>Recent Transactions</h3>
+        <table class="transactions" id="transactionTable">
+            <tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+        </table>
+
+        <h3>Transfer Funds</h3>
+        <select id="toAccount"></select>
+        <input type="number" id="transferAmount" min="1" placeholder="Amount">
+        <button class="button" onclick="transfer()">Transfer</button>
+
+        <h3>Add Funds</h3>
+        <input type="number" id="depositAmount" min="1" placeholder="Amount">
+        <button class="button" onclick="deposit()">Deposit</button>
+
+        <button class="button" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<script>
+// Fake accounts
+const accounts = [
+    {username: "user1", password: "pass1", balance: 1000, transactions: []},
+    {username: "user2", password: "pass2", balance: 500, transactions: []},
+    {username: "user3", password: "pass3", balance: 2500, transactions: []}
+];
+
+let currentAccount = null;
+
+// Show login page initially
+document.getElementById("loginPage").style.display = "flex";
+
+// Login
+function login() {
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const account = accounts.find(acc => acc.username === username && acc.password === password);
+
+    if(account){
+        currentAccount = account;
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        updateBalance();
+        updateTransactions();
+        updateAccountDropdown();
+    } else {
+        alert("Invalid username or password!");
+    }
+}
+
+// Update balance display
+function updateBalance() {
+    document.getElementById("balance").innerText = currentAccount.balance.toFixed(2);
+}
+
+// Update transaction table
+function updateTransactions() {
+    const table = document.getElementById("transactionTable");
+    table.innerHTML = "<tr><th>Date</th><th>Description</th><th>Amount</th></tr>";
+    currentAccount.transactions.slice().reverse().forEach(t => {
+        const row = table.insertRow();
+        row.insertCell(0).innerText = t.date;
+        row.insertCell(1).innerText = t.description;
+        row.insertCell(2).innerText = t.amount;
+    });
+}
+
+// Populate accounts for transfer
+function updateAccountDropdown() {
+    const select = document.getElementById("toAccount");
+    select.innerHTML = "";
+    accounts.forEach(acc => {
+        if(acc.username !== currentAccount.username){
+            const option = document.createElement("option");
+            option.value = acc.username;
+            option.text = acc.username;
+            select.add(option);
+        }
+    });
+}
+
+// Transfer funds
+function transfer() {
+    const toUser = document.getElementById("toAccount").value;
+    const amount = parseFloat(document.getElementById("transferAmount").value);
+    if(amount <= 0 || isNaN(amount)) { alert("Enter a valid amount!"); return; }
+    if(amount > currentAccount.balance) { alert("Insufficient funds!"); return; }
+
+    const recipient = accounts.find(acc => acc.username === toUser);
+    currentAccount.balance -= amount;
+    recipient.balance += amount;
+
+    const now = new Date().toLocaleDateString();
+    currentAccount.transactions.push({date: now, description: `Transfer to ${toUser}`, amount: `-$${amount.toFixed(2)}`});
+    recipient.transactions.push({date: now, description: `Transfer from ${currentAccount.username}`, amount: `+$${amount.toFixed(2)}`});
+
+    updateBalance();
+    updateTransactions();
+    alert(`$${amount.toFixed(2)} transferred to ${toUser}!`);
+}
+
+// Deposit funds
+function deposit() {
+    const amount = parseFloat(document.getElementById("depositAmount").value);
+    if(amount <= 0 || isNaN(amount)) { alert("Enter a valid amount!"); return; }
+
+    currentAccount.balance += amount;
+    const now = new Date().toLocaleDateString();
+    currentAccount.transactions.push({date: now, description: "Deposit", amount: `+$${amount.toFixed(2)}`});
+
+    updateBalance();
+    updateTransactions();
+    alert(`$${amount.toFixed(2)} deposited!`);
+}
+
+// Logout
+function logout() {
+    currentAccount = null;
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("loginPage").style.display = "flex";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+}
+</script>
+
+</body>
+</html>
